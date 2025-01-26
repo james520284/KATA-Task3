@@ -1,33 +1,77 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 
-function App() {
-  const [count, setCount] = useState(0)
+import Login from './pages/Login';
+import ProductManager from './pages/ProductManager';
+
+console.clear();
+
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
+// =====================================================
+// 父元素元件
+const App = () => {
+  const defaultUserInfo = {username: "",password: ""};
+  const [userInfo,setUserInfo] = useState(defaultUserInfo);
+  
+ // 登入 api
+  const handleOnChangeLogin = (e) =>{
+    const {name,value} = e.target;
+    setUserInfo(prev => ({...prev,[name]: value}));
+  };
+  const postSignin = async () => {
+    try {
+      const res = await axios.post(`${baseUrl}/admin/signin`,userInfo);
+      const {token,expired} = res.data;      
+      document.cookie =`myToken=${token}; expires=${new Date(expired)};`
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  const handleOnSubmitSignin = e => {
+    e.preventDefault();
+    postSignin();
+    setUserInfo(defaultUserInfo);
+  };
+
+  // 登入驗證 api
+  const [isAuthor,setIsAuthor] = useState(false);
+  const checkLogin =async () => {
+    try {
+      await axios.post(`${baseUrl}/api/user/check`);
+      
+    } catch (err) {
+      alert('登入失敗');
+    }
+  };
+
+  useEffect(()=>{
+    const getToken = document.cookie.replace(
+      /(?:(?:^|.*;\s*)myToken\s*\=\s*([^;]*).*$)|^.*$/,
+      "$1",
+    );
+    axios.defaults.headers.common['Authorization'] = getToken;
+    checkLogin();
+    setIsAuthor(true);
+  },[]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {
+        isAuthor ? (
+        <>
+        <ProductManager
+        isAuthor={isAuthor}
+        />
+        </>
+        ) : (
+        <Login
+        handleOnChangeLogin={handleOnChangeLogin}
+        handleOnSubmitSignin={handleOnSubmitSignin}
+        userInfo={userInfo}
+        />
+        )
+      }
     </>
   )
 }
