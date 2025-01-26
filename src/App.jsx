@@ -24,13 +24,14 @@ const App = () => {
       const res = await axios.post(`${baseUrl}/admin/signin`,userInfo);
       const {token,expired} = res.data;      
       document.cookie =`myToken=${token}; expires=${new Date(expired)};`
+      setIsAuthor(true);
     } catch (err) {
       console.error(err);
     }
   };
-  const handleOnSubmitSignin = e => {
+  const handleOnSubmitSignin =async (e) => {
     e.preventDefault();
-    postSignin();
+    await postSignin();
     setUserInfo(defaultUserInfo);
   };
 
@@ -39,21 +40,26 @@ const App = () => {
   const checkLogin =async () => {
     try {
       await axios.post(`${baseUrl}/api/user/check`);
-      
+      setIsAuthor(true);
     } catch (err) {
-      alert('登入失敗');
+      setIsAuthor(false);
     }
   };
 
   useEffect(()=>{
+    const checkAuth = async () => {
     const getToken = document.cookie.replace(
       /(?:(?:^|.*;\s*)myToken\s*\=\s*([^;]*).*$)|^.*$/,
-      "$1",
+      "$1"
     );
     axios.defaults.headers.common['Authorization'] = getToken;
-    checkLogin();
-    setIsAuthor(true);
+    
+    await checkLogin(); 
+  };
+
+  checkAuth();
   },[]);
+
 
   return (
     <>
